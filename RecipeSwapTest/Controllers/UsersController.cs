@@ -14,22 +14,26 @@ using Microsoft.EntityFrameworkCore;
 using System.Net.Mail;
 using System.Net;
 using RecipeSwapTest.ViewModels;
+using Humanizer.Localisation;
+using Microsoft.Extensions.Configuration;
 
 
 namespace RecipeSwapTest.Controllers
 {
+    
     [Route("api/[controller]")]
     [ApiController]
     public class UsersController : ControllerBase
     {
         private readonly RecipeSwapTestContext _context;
-
-        public UsersController(RecipeSwapTestContext context)
+        private readonly IConfiguration _configuration;
+        public UsersController(IConfiguration configuration,RecipeSwapTestContext context)
         {
             _context = context;
+            _configuration = configuration;
         }
 
-
+        
 
         //////////////////LOGIN/////////////////////
 
@@ -137,23 +141,30 @@ namespace RecipeSwapTest.Controllers
         }
 
         //generate jwt token
-        private string GenerateJwtToken(User user)
-        {
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes("unaChiaveSegretaMoltoMoltoLungaPerSoddisfareIRequisiti");
+        
 
-            var tokenDescriptor = new SecurityTokenDescriptor
+        private string GenerateJwtToken(User utente)
+        {
+            var claims = new[]
             {
-                Subject = new ClaimsIdentity(new Claim[]
-                {
-                    new Claim(ClaimTypes.Name, user.UserId.ToString())
-                }),
-                Expires = DateTime.UtcNow.AddHours(1),
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+                
+                new Claim(JwtRegisteredClaimNames.Jti, utente.UserId.ToString()),
+                new Claim(JwtRegisteredClaimNames.Sub, utente.Email),
+                new Claim(ClaimTypes.Role, utente.Role == "user" ? "User" : "Admin" ),
             };
 
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            return tokenHandler.WriteToken(token);
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var token = new JwtSecurityToken(
+                _configuration["Jwt:Issuer"],
+                _configuration["Jwt:Audience"],
+                claims,
+                expires: DateTime.Now.AddDays(30),
+                signingCredentials: creds
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
 
@@ -284,3 +295,24 @@ namespace RecipeSwapTest.Controllers
 
     }
 }
+
+
+//private string GenerateJwtToken(User user)
+//{
+//    var tokenHandler = new JwtSecurityTokenHandler();
+//    var key = Encoding.ASCII.GetBytes("unaChiaveSegretaMoltoMoltoLungaPerSoddisfareIRequisiti");
+
+//    var tokenDescriptor = new SecurityTokenDescriptor
+//    {
+//        Subject = new ClaimsIdentity(new Claim[]
+//        {
+//            new Claim(ClaimTypes.Name, user.UserId.ToString()),
+//            new Claim(ClaimTypes.Role, user.Role)
+//        }),
+//        Expires = DateTime.UtcNow.AddHours(1),
+//        SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+//    };
+
+//    var token = tokenHandler.CreateToken(tokenDescriptor);
+//    return tokenHandler.WriteToken(token);
+//}
