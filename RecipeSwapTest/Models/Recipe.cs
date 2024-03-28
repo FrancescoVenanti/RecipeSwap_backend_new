@@ -43,4 +43,7 @@ public partial class Recipe
     [ForeignKey("UserId")]
     [InverseProperty("Recipes")]
     public virtual User User { get; set; } = null!;
+
+    [InverseProperty("Recipe")]
+    public virtual ICollection<Favorites> Favorites { get; set; } = new List<Favorites>();
 }

@@ -20,20 +20,20 @@ using Microsoft.Extensions.Configuration;
 
 namespace RecipeSwapTest.Controllers
 {
-    
+
     [Route("api/[controller]")]
     [ApiController]
     public class UsersController : ControllerBase
     {
         private readonly RecipeSwapTestContext _context;
         private readonly IConfiguration _configuration;
-        public UsersController(IConfiguration configuration,RecipeSwapTestContext context)
+        public UsersController(IConfiguration configuration, RecipeSwapTestContext context)
         {
             _context = context;
             _configuration = configuration;
         }
 
-        
+
 
         //////////////////LOGIN/////////////////////
 
@@ -41,10 +41,11 @@ namespace RecipeSwapTest.Controllers
         // POST: api/Users/Login
         [HttpPost]
         [Route("Login")]
-        public IActionResult Login([FromBody] LoginViewModel user)
+        public async Task<ActionResult<IEnumerable<object>>> Login([FromBody] LoginViewModel user)
         {
             // Cerca l'utente nel database
-            User dbUser = _context.Users.FirstOrDefault(u => u.Username == user.Username);
+            User dbUser = _context.Users.Where(u => u.Username == user.Username).FirstOrDefault();
+
             if (dbUser == null)
             {
                 return BadRequest(new { message = "Username o password non validi." });
@@ -66,13 +67,19 @@ namespace RecipeSwapTest.Controllers
             // Restituisci il token
             return Ok(new
             {
-                //todo aggiungere i campi che si vogliono restituire
                 Id = dbUser.UserId,
                 Username = dbUser.Username,
                 Email = dbUser.Email,
-                Token = tokenString
+                Token = tokenString,
+                ProfilePicture = dbUser.ProfilePicture,
+                RegistrationDate = dbUser.RegistrationDate,
+                Bio = dbUser.Bio,
+                FirstName = dbUser.FirstName,
+                LastName = dbUser.LastName,
+                VerifiedEmail = dbUser.VerifiedEmail,
             });
         }
+        //
 
         // POST: api/Users/Register
         [HttpPost]
@@ -125,8 +132,8 @@ namespace RecipeSwapTest.Controllers
                 Role = "user"
             });
             // Invia l'email di conferma
-            InviaEmailConferma(user.Email, tokenEmail);;
-            
+            InviaEmailConferma(user.Email, tokenEmail); ;
+
             _context.SaveChanges();
 
             return Ok(new { message = "Utente registrato con successo." });
@@ -141,13 +148,13 @@ namespace RecipeSwapTest.Controllers
         }
 
         //generate jwt token
-        
+
 
         private string GenerateJwtToken(User utente)
         {
             var claims = new[]
             {
-                
+
                 new Claim(JwtRegisteredClaimNames.Jti, utente.UserId.ToString()),
                 new Claim(JwtRegisteredClaimNames.Sub, utente.Email),
                 new Claim(ClaimTypes.Role, utente.Role == "user" ? "User" : "Admin" ),

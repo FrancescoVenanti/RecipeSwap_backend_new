@@ -62,4 +62,7 @@ public partial class User
 
     [InverseProperty("User")]
     public virtual ICollection<Recipe> Recipes { get; set; } = new List<Recipe>();
+
+    [InverseProperty("User")]
+    public ICollection<Favorites> Favorites { get; set; }= new List<Favorites>();
 }
