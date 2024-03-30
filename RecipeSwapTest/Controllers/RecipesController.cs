@@ -22,38 +22,38 @@ namespace RecipeSwapTest.Controllers
         {
             _context = context;
         }
-        
+
         // GET: api/Recipes
         [HttpGet]
         public async Task<ActionResult<IEnumerable<object>>> GetRecipes()
         {
-           var recipes = await _context.Recipes
-                .Select(r => new 
-                {
-                    r.RecipeId,
-                    r.Title,
-                    r.Description,
-                    r.Ingredients,
-                    r.Instructions,
-                    r.Image,
-                    User = new 
-                    {
-                        r.User.UserId,
-                        r.User.Username,
-                        r.User.ProfilePicture,
-                    },
-                    Comments = r.Comments.Select(c => new 
-                    {
-                        c.CommentId,
-                        c.Comment1,
-                        c.User.UserId,
-                        c.User.Username,
-                        c.User.ProfilePicture,
-                    }),
-                    Likes = r.Likes.Count(),
+            var recipes = await _context.Recipes
+                 .Select(r => new
+                 {
+                     r.RecipeId,
+                     r.Title,
+                     r.Description,
+                     r.Ingredients,
+                     r.Instructions,
+                     r.Image,
+                     User = new
+                     {
+                         r.User.UserId,
+                         r.User.Username,
+                         r.User.ProfilePicture,
+                     },
+                     Comments = r.Comments.Select(c => new
+                     {
+                         c.CommentId,
+                         c.Comment1,
+                         c.User.UserId,
+                         c.User.Username,
+                         c.User.ProfilePicture,
+                     }),
+                     Likes = r.Likes.Count(),
 
-                })
-                .ToListAsync();
+                 })
+                 .ToListAsync();
 
             return Ok(recipes);
         }
@@ -137,48 +137,88 @@ namespace RecipeSwapTest.Controllers
 
         ////////custom methods
         ///
-        
 
-            [HttpGet("GetRecipesByName/{name}")]
-            public async Task<ActionResult<IEnumerable<object>>> GetRecipesByName(string name)
-            {
-                var recipes = await _context.Recipes
-                    .Where(r => r.Title.Contains(name))
-                    .Select(r => new
+
+        [HttpGet("GetRecipesByName/{name}")]
+        public async Task<ActionResult<IEnumerable<object>>> GetRecipesByName(string name)
+        {
+            var recipes = await _context.Recipes
+                .Where(r => r.Title.Contains(name))
+                .Select(r => new
+                {
+                    Recipe = new
                     {
-                        Recipe = new
+                        r.RecipeId,
+                        r.Title,
+                        r.Ingredients,
+                        r.Description,
+                        r.Instructions,
+                        r.Image,
+                        Users = new
                         {
-                            r.RecipeId,
-                            r.Title,
-                            r.Ingredients,
-                            r.Description,
-                            r.Instructions,
-                            r.Image,
-                            Users = new
-                            {
-                                r.User.UserId, // Assuming each recipe is associated with one user
-                                r.User.Username,
-                                r.User.ProfilePicture
-                            },
-                            Comments = r.Comments.Select(c => new
-                            {
-                                c.CommentId,
-                                Comment = c.Comment1, // Assuming 'Comment' is the actual name of the property holding the comment text
-                                User = new // Changed from Users to User, assuming each comment is made by a single user
-                                {
-                                    c.User.UserId,
-                                    c.User.Username,
-                                    c.User.ProfilePicture
-                                }
-                            }),
+                            r.User.UserId, // Assuming each recipe is associated with one user
+                            r.User.Username,
+                            r.User.ProfilePicture
                         },
-                        LikesCount = r.Likes.Count
-                    })
-                    .OrderByDescending(r => r.LikesCount)
-                    .ToListAsync();
+                        Comments = r.Comments.Select(c => new
+                        {
+                            c.CommentId,
+                            Comment = c.Comment1, // Assuming 'Comment' is the actual name of the property holding the comment text
+                            User = new // Changed from Users to User, assuming each comment is made by a single user
+                            {
+                                c.User.UserId,
+                                c.User.Username,
+                                c.User.ProfilePicture
+                            }
+                        }),
+                    },
+                    LikesCount = r.Likes.Count
+                })
+                .OrderByDescending(r => r.LikesCount)
+                .ToListAsync();
 
-                return Ok(recipes);
-            }
+            return Ok(recipes);
+        }
+
+        //get the 3 most liked recipes
+        [HttpGet]
+        [Route("GetMostLikedRecipes")]
+        public async Task<ActionResult<IEnumerable<object>>> GetMostLikedRecipes()
+        {
+            var recipes = await _context.Recipes
+                .Select(r => new
+                {
+                    r.RecipeId,
+                    r.Title,
+                    r.Description,
+                    r.Ingredients,
+                    r.Instructions,
+                    r.Image,
+                    User = new
+                    {
+                        r.User.UserId,
+                        r.User.Username,
+                        r.User.ProfilePicture,
+                    },
+                    Comments = r.Comments.Select(c => new
+                    {
+                        c.CommentId,
+                        c.Comment1,
+                        User = new
+                        {
+                            c.User.UserId,
+                            c.User.Username,
+                            c.User.ProfilePicture,
+                        }
+                    }),
+                    Likes = r.Likes.Count(),
+                })
+                .OrderByDescending(r => r.Likes)
+                .Take(3)
+                .ToListAsync();
+
+            return Ok(recipes);
         }
     }
+}
 
