@@ -16,12 +16,16 @@ namespace RecipeSwapTest.Controllers
     [ApiController]
     public class RecipesController : ControllerBase
     {
-        private readonly RecipeSwapTestContext _context;
+        
+
+    private readonly RecipeSwapTestContext _context;
 
         public RecipesController(RecipeSwapTestContext context)
         {
             _context = context;
         }
+
+        
 
         // GET: api/Recipes
         [HttpGet]
@@ -106,8 +110,19 @@ namespace RecipeSwapTest.Controllers
         // POST: api/Recipes
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Recipe>> PostRecipe(Recipe recipe)
+        public async Task<ActionResult<Recipe>> PostRecipe([FromBody] RecipeDto recipeDto)
         {
+            var recipe = new Recipe
+            {
+                UserId = recipeDto.UserId,
+                Title = recipeDto.Title,
+                Instructions = recipeDto.Instructions,
+                Ingredients = recipeDto.Ingredients,
+                Description = recipeDto.Description,
+                CreationDate = DateTime.Now,
+                IsVisible = true
+            };
+
             _context.Recipes.Add(recipe);
             await _context.SaveChangesAsync();
 
