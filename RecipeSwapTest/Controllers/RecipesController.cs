@@ -8,6 +8,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RecipeSwapTest.Data;
 using RecipeSwapTest.Models;
+using CloudinaryDotNet;
+using CloudinaryDotNet.Actions;
+using Microsoft.Extensions.Options;
 
 namespace RecipeSwapTest.Controllers
 {
@@ -16,22 +19,30 @@ namespace RecipeSwapTest.Controllers
     [ApiController]
     public class RecipesController : ControllerBase
     {
-        
 
-    private readonly RecipeSwapTestContext _context;
+        private readonly RecipeSwapTestContext _context;
+        private Cloudinary _cloudinary;
 
-        public RecipesController(RecipeSwapTestContext context)
+        public RecipesController(RecipeSwapTestContext context, IOptions<CloudinarySettings> cloudinaryConfig)
         {
             _context = context;
+
+            var acc = new Account(
+                cloudinaryConfig.Value.CloudName,
+                cloudinaryConfig.Value.ApiKey,
+                cloudinaryConfig.Value.ApiSecret);
+
+            _cloudinary = new Cloudinary(acc);
         }
 
-        
+
 
         // GET: api/Recipes
         [HttpGet]
         public async Task<ActionResult<IEnumerable<object>>> GetRecipes()
         {
             var recipes = await _context.Recipes
+                .OrderByDescending(r => r.CreationDate)
                  .Select(r => new
                  {
                      r.RecipeId,
@@ -40,6 +51,7 @@ namespace RecipeSwapTest.Controllers
                      r.Ingredients,
                      r.Instructions,
                      r.Image,
+                     r.CreationDate,
                      User = new
                      {
                          r.User.UserId,
@@ -110,24 +122,45 @@ namespace RecipeSwapTest.Controllers
         // POST: api/Recipes
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Recipe>> PostRecipe([FromBody] RecipeDto recipeDto)
+        public async Task<ActionResult<Recipe>> PostRecipe([FromForm] RecipeDto recipeDto)
         {
-            var recipe = new Recipe
+            try
             {
-                UserId = recipeDto.UserId,
-                Title = recipeDto.Title,
-                Instructions = recipeDto.Instructions,
-                Ingredients = recipeDto.Ingredients,
-                Description = recipeDto.Description,
-                CreationDate = DateTime.Now,
-                IsVisible = true
-            };
+                var imageUploadResult = new ImageUploadResult();
+                if (recipeDto.Image != null)
+                {
+                    var uploadResult = await _cloudinary.UploadAsync(new ImageUploadParams
+                    {
+                        File = new FileDescription(recipeDto.Image.FileName, recipeDto.Image.OpenReadStream()),
+                        // Optional transformations or folder settings here
+                    });
+                    imageUploadResult = uploadResult;
+                }
 
-            _context.Recipes.Add(recipe);
-            await _context.SaveChangesAsync();
+                var recipe = new Recipe
+                {
+                    UserId = recipeDto.UserId,
+                    Title = recipeDto.Title,
+                    Instructions = recipeDto.Instructions,
+                    Ingredients = recipeDto.Ingredients,
+                    Description = recipeDto.Description,
+                    CreationDate = DateTime.Now,
+                    Image = imageUploadResult.SecureUrl?.ToString() ?? string.Empty,
+                    IsVisible = true
+                };
 
-            return CreatedAtAction("GetRecipe", new { id = recipe.RecipeId }, recipe);
+                _context.Recipes.Add(recipe);
+                await _context.SaveChangesAsync();
+
+                return CreatedAtAction("GetRecipe", new { id = recipe.RecipeId }, recipe);
+            }
+            catch (Exception ex)
+            {
+                // Log the exception here...
+                return StatusCode(500, "An error occurred while processing your request.");
+            }
         }
+
 
         // DELETE: api/Recipes/5
         [HttpDelete("{id}")]

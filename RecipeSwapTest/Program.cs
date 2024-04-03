@@ -46,6 +46,8 @@ builder
             )
         };
     });
+builder.Services.Configure<CloudinarySettings>(builder.Configuration.GetSection("Cloudinary"));
+builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
 
