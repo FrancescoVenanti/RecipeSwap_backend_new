@@ -43,6 +43,7 @@ namespace RecipeSwapTest.Controllers
         {
             var recipes = await _context.Recipes
                 .OrderByDescending(r => r.CreationDate)
+                .Take(500)
                  .Select(r => new
                  {
                      r.RecipeId,
@@ -202,11 +203,11 @@ namespace RecipeSwapTest.Controllers
                         r.Description,
                         r.Instructions,
                         r.Image,
-                        Users = new
+                        User = new
                         {
-                            r.User.UserId, // Assuming each recipe is associated with one user
+                            r.User.UserId,
                             r.User.Username,
-                            r.User.ProfilePicture
+                            r.User.ProfilePicture,
                         },
                         Comments = r.Comments.Select(c => new
                         {
