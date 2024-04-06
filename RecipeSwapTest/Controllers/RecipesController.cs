@@ -67,7 +67,13 @@ namespace RecipeSwapTest.Controllers
                          c.User.Username,
                          c.User.ProfilePicture,
                      }),
-                     Likes = r.Likes.Count(),
+                     Likes = r.Likes.Select(l => new
+                     {
+                         l.LikeId,
+                         l.UserId,
+                         l.RecipeId,
+                     }).ToList(),
+                     LikesCount = r.Likes.Count(),
 
                  })
                  .ToListAsync();
