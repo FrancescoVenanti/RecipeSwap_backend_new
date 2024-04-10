@@ -61,7 +61,13 @@ namespace RecipeSwapTest.Controllers
                             f.Recipe.User.Username,
                             f.Recipe.User.ProfilePicture,
                         },
-                        Likes = f.Recipe.Likes.Count // Qui viene calcolato il conteggio senza virgola alla fine
+                        Likes = f.Recipe.Likes.Select(l => new
+                        {
+                            l.LikeId,
+                            l.UserId,
+                            l.RecipeId,
+                        }).ToList(),
+                        LikesCount = f.Recipe.Likes.Count(),
                     }
                 })
                 .ToListAsync();

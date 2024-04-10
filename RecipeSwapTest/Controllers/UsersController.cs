@@ -16,6 +16,9 @@ using System.Net;
 using RecipeSwapTest.ViewModels;
 using Humanizer.Localisation;
 using Microsoft.Extensions.Configuration;
+using CloudinaryDotNet.Actions;
+using CloudinaryDotNet;
+using Microsoft.Extensions.Options;
 
 
 namespace RecipeSwapTest.Controllers
@@ -27,10 +30,18 @@ namespace RecipeSwapTest.Controllers
     {
         private readonly RecipeSwapTestContext _context;
         private readonly IConfiguration _configuration;
-        public UsersController(IConfiguration configuration, RecipeSwapTestContext context)
+        private Cloudinary _cloudinary;
+        public UsersController(IConfiguration configuration, RecipeSwapTestContext context, IOptions<CloudinarySettings> cloudinaryConfig)
         {
             _context = context;
             _configuration = configuration;
+
+            var acc = new Account(
+                cloudinaryConfig.Value.CloudName,
+                cloudinaryConfig.Value.ApiKey,
+                cloudinaryConfig.Value.ApiSecret);
+
+            _cloudinary = new Cloudinary(acc);
         }
 
 
@@ -299,10 +310,102 @@ namespace RecipeSwapTest.Controllers
             return true;
         }
 
+        [HttpPost("updateProfilePicture/{userId}")]
+        public async Task<IActionResult> UpdateProfilePicture([FromRoute] int userId, [FromForm] IFormFile image)
+        {
+            try
+            {
+                var user = await _context.Users.FindAsync(userId);
+                if (user == null)
+                {
+                    return NotFound($"User with ID {userId} not found.");
+                }
+
+                if (image == null || image.Length == 0)
+                {
+                    return BadRequest("No image provided.");
+                }
+
+                var imageUploadResult = new ImageUploadResult();
+                var uploadResult = await _cloudinary.UploadAsync(new ImageUploadParams
+                {
+                    File = new FileDescription(image.FileName, image.OpenReadStream()),
+                    // Optional transformations or folder settings here
+                });
+                imageUploadResult = uploadResult;
+
+                user.ProfilePicture = imageUploadResult.SecureUrl?.ToString() ?? string.Empty;
+                await _context.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    message = "Profile picture updated successfully.",
+                    profilePic = user.ProfilePicture
+                });
+            }
+            catch (Exception ex)
+            {
+                // Log the exception here...
+                return StatusCode(500, ex + " An error occurred while processing your request.");
+            }
+        }
+
+        [HttpGet("getUser/{userId}")]
+        public async Task<ActionResult> GetUser([FromRoute] int userId)
+        {
+            var userWithRecipes = await _context.Users
+                .Where(u => u.UserId == userId)
+                .Select(u => new
+                {
+                    u.UserId,
+                    u.Username,
+                    u.Email,
+                    u.ProfilePicture,
+                    u.Bio,
+                    u.FirstName,
+                    u.LastName,
+                    RegistrationDate = u.RegistrationDate,
+                    u.VerifiedEmail,
+                    Recipes = u.Recipes.Select(r => new
+                    {
+                        r.RecipeId,
+                        r.Title,
+                        r.Description,
+                        r.Ingredients,
+                        r.Instructions,
+                        r.Image,
+                        r.CreationDate,
+                        Comments = r.Comments.Select(c => new
+                        {
+                            c.CommentId,
+                            CommentText = c.Comment1, // Assuming Comment1 is the comment text. Rename as necessary.
+                            User = new
+                            {
+                                c.User.UserId,
+                                c.User.Username,
+                                c.User.ProfilePicture
+                            }
+                        }).ToList(),
+                        Likes = r.Likes.Select(l => new
+                        {
+                            l.LikeId,
+                            l.UserId,
+                            l.RecipeId
+                        }).ToList(),
+                        LikesCount = r.Likes.Count
+                    }).ToList()
+                }).FirstOrDefaultAsync();
+
+            if (userWithRecipes == null)
+            {
+                return NotFound($"User with ID {userId} not found.");
+            }
+
+            return Ok(userWithRecipes);
+        }
 
     }
 }
-
 
 //private string GenerateJwtToken(User user)
 //{
