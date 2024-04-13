@@ -58,6 +58,16 @@ namespace RecipeSwapTest.Controllers
                          r.User.UserId,
                          r.User.Username,
                          r.User.ProfilePicture,
+                         follower = r.User.FollowerFollowerUsers.Select(f => new
+                         {
+                             f.FollowerUserId,
+                             f.FollowedUserId
+                         }),
+                         following = r.User.FollowerFollowedUsers.Select(f => new
+                         {
+                             f.FollowerUserId,
+                             f.FollowedUserId
+                         })
                      },
                      Comments = r.Comments.Select(c => new
                      {
@@ -179,7 +189,17 @@ namespace RecipeSwapTest.Controllers
                 return NotFound();
             }
 
+            // Delete the related comments
+            var comments = _context.Comments.Where(c => c.RecipeId == id);
+            _context.Comments.RemoveRange(comments);
+
+            // Delete the related likes
+            var likes = _context.Likes.Where(l => l.RecipeId == id);
+            _context.Likes.RemoveRange(likes);
+
+            // Remove the recipe itself
             _context.Recipes.Remove(recipe);
+
             await _context.SaveChangesAsync();
 
             return NoContent();
@@ -223,7 +243,17 @@ namespace RecipeSwapTest.Controllers
                             {
                                 c.User.UserId,
                                 c.User.Username,
-                                c.User.ProfilePicture
+                                c.User.ProfilePicture,
+                                follower = c.User.FollowerFollowerUsers.Select(f => new
+                                {
+                                    f.FollowerUserId,
+                                    f.FollowedUserId
+                                }),
+                                following = c.User.FollowerFollowedUsers.Select(f => new
+                                {
+                                    f.FollowerUserId,
+                                    f.FollowedUserId
+                                })
                             }
                         }),
                     },

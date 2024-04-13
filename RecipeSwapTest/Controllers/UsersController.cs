@@ -262,7 +262,7 @@ namespace RecipeSwapTest.Controllers
             smtpClient.UseDefaultCredentials = false;
             //TODO: inserire le credenziali del mittente
             //cambiare mail e password per l'account definitivo
-            smtpClient.Credentials = new NetworkCredential("napolitest14@gmail.com", "kegv pdde knob lihp");
+            smtpClient.Credentials = new NetworkCredential("napolitest14@gmail.com", "tubt hatj smdh bchg");
             smtpClient.EnableSsl = true;
 
             // Invia l'email
@@ -366,6 +366,20 @@ namespace RecipeSwapTest.Controllers
                     u.LastName,
                     RegistrationDate = u.RegistrationDate,
                     u.VerifiedEmail,
+                    follower = u.FollowerFollowerUsers.Select(f => new
+                    {
+                        f.FollowerId,
+                        f.FollowerUserId,
+                        f.FollowedUserId,
+                        f.FollowDate
+                    }).ToList(),
+                    following = u.FollowerFollowedUsers.Select(f => new
+                    {
+                        f.FollowerId,
+                        f.FollowerUserId,
+                        f.FollowedUserId,
+                        f.FollowDate
+                    }).ToList(),
                     Recipes = u.Recipes.Select(r => new
                     {
                         r.RecipeId,
