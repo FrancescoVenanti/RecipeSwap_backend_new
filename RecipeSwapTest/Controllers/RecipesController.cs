@@ -221,46 +221,47 @@ namespace RecipeSwapTest.Controllers
                 .Where(r => r.Title.Contains(name))
                 .Select(r => new
                 {
-                    Recipe = new
+                    r.RecipeId,
+                    r.Title,
+                    r.Description,
+                    r.Ingredients,
+                    r.Instructions,
+                    r.Image,
+                    r.CreationDate,
+                    User = new
                     {
-                        r.RecipeId,
-                        r.Title,
-                        r.Ingredients,
-                        r.Description,
-                        r.Instructions,
-                        r.Image,
-                        User = new
+                        r.User.UserId,
+                        r.User.Username,
+                        r.User.ProfilePicture,
+                        follower = r.User.FollowerFollowerUsers.Select(f => new
                         {
-                            r.User.UserId,
-                            r.User.Username,
-                            r.User.ProfilePicture,
-                        },
-                        Comments = r.Comments.Select(c => new
-                        {
-                            c.CommentId,
-                            Comment = c.Comment1, // Assuming 'Comment' is the actual name of the property holding the comment text
-                            User = new // Changed from Users to User, assuming each comment is made by a single user
-                            {
-                                c.User.UserId,
-                                c.User.Username,
-                                c.User.ProfilePicture,
-                                follower = c.User.FollowerFollowerUsers.Select(f => new
-                                {
-                                    f.FollowerUserId,
-                                    f.FollowedUserId
-                                }),
-                                following = c.User.FollowerFollowedUsers.Select(f => new
-                                {
-                                    f.FollowerUserId,
-                                    f.FollowedUserId
-                                })
-                            }
+                            f.FollowerUserId,
+                            f.FollowedUserId
                         }),
+                        following = r.User.FollowerFollowedUsers.Select(f => new
+                        {
+                            f.FollowerUserId,
+                            f.FollowedUserId
+                        })
                     },
-                    LikesCount = r.Likes.Count
+                    Comments = r.Comments.Select(c => new
+                    {
+                        c.CommentId,
+                        c.Comment1,
+                        c.User.UserId,
+                        c.User.Username,
+                        c.User.ProfilePicture,
+                    }),
+                    Likes = r.Likes.Select(l => new
+                    {
+                        l.LikeId,
+                        l.UserId,
+                        l.RecipeId,
+                    }).ToList(),
+                    LikesCount = r.Likes.Count(),
+
                 })
-                .OrderByDescending(r => r.LikesCount)
-                .ToListAsync();
+                 .ToListAsync();
 
             return Ok(recipes);
         }
