@@ -218,7 +218,7 @@ namespace RecipeSwapTest.Controllers
         public async Task<ActionResult<IEnumerable<object>>> GetRecipesByName(string name)
         {
             var recipes = await _context.Recipes
-                .Where(r => r.Title.Contains(name))
+                .Where(r => r.Title.Contains(name) || r.User.Username.Contains(name))
                 .Select(r => new
                 {
                     r.RecipeId,
