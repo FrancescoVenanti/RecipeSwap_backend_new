@@ -30,6 +30,19 @@ namespace RecipeSwapTest.Controllers
             return await _context.Messages.ToListAsync();
         }
 
+        [HttpGet("{id}")]
+        public async Task<ActionResult<Message>> GetMessage(int id)
+        {
+            var message = await _context.Messages.FindAsync(id);
+
+            if (message == null)
+            {
+                return NotFound();
+            }
+
+            return message;
+        }
+
         [HttpGet("GetMessagesByUser/{userId}")]
         public async Task<ActionResult<IEnumerable<Message>>> GetMessagesByUser(int userId)
         {
@@ -58,6 +71,25 @@ namespace RecipeSwapTest.Controllers
                 }).ToListAsync();
 
             return messages;
+        }
+
+        [HttpPost("SendMessage")]
+        [Route("SendMessage")]
+        public async Task<ActionResult<Message>> SendMessage(messageDto m)
+        {
+            Message message = new Message
+            {
+                SenderUserId = m.SenderUserId,
+                ReceiverUserId = m.ReceiverUserId,
+                MessageContent = m.MessageContent,
+                Timestamp = DateTime.Now,
+                IsRead = false
+            };
+            message.Timestamp = DateTime.Now;
+            _context.Messages.Add(message);
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction("GetMessage", new { id = message.MessageId }, message);
         }
 
         private bool MessageExists(int id)
