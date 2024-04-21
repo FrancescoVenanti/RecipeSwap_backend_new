@@ -38,6 +38,29 @@ namespace RecipeSwapTest.Controllers
             return await _context.Followers.Where(f => f.FollowedUserId == id).ToListAsync();
         }
 
+        [HttpGet]
+        [Route("GetUserFollowing/{id}")]
+        public async Task<ActionResult<IEnumerable<Follower>>> GetUserFollowing(int id)
+        {
+            var follow = await _context.Followers
+                .Where(f => f.FollowerUserId == id)
+                .Select(f => new Follower
+                {
+                    FollowerId = f.FollowerId,
+                    FollowerUserId = f.FollowerUserId,
+                    FollowedUserId = f.FollowedUserId,
+                    FollowDate = f.FollowDate,
+                    FollowedUser = new User
+                    {
+                        UserId = f.FollowedUser.UserId,
+                        Username = f.FollowedUser.Username,
+                        ProfilePicture = f.FollowedUser.ProfilePicture
+                    }
+                }).ToListAsync();
+
+            return follow;
+        }
+
         [HttpPost]
         [Route("followUnfollow")]
         public async Task<ActionResult<Follower>> followUnfollow( int followerId, int followedId)

@@ -74,7 +74,6 @@ namespace RecipeSwapTest.Controllers
         }
 
         [HttpPost("SendMessage")]
-        [Route("SendMessage")]
         public async Task<ActionResult<Message>> SendMessage(messageDto m)
         {
             Message message = new Message
