@@ -88,6 +88,7 @@ namespace RecipeSwapTest.Controllers
                 FirstName = dbUser.FirstName,
                 LastName = dbUser.LastName,
                 VerifiedEmail = dbUser.VerifiedEmail,
+                Role = dbUser.Role
                 
             });
         }
